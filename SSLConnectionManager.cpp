@@ -44,7 +44,7 @@ SSLConnectionManager::SSLConnectionManager(io_service &io_service,
 }
 
 void SSLConnectionManager::acceptIncomingConnection() {
-  boost::shared_ptr<ip::tcp::socket> socket(new ip::tcp::socket(acceptor.io_service()));
+  boost::shared_ptr<ip::tcp::socket> socket(new ip::tcp::socket(acceptor.get_io_service()));
 
   acceptor.async_accept(*socket, boost::bind(&SSLConnectionManager::handleClientConnection,
 					     this, socket, placeholders::error));
@@ -76,7 +76,7 @@ void SSLConnectionManager::shuttleConnection(boost::shared_ptr<ip::tcp::socket> 
 					     ip::tcp::endpoint &destination)
 
 {
-  Bridge::ptr bridge = RawBridge::create(clientSocket, destination, acceptor.io_service());
+  Bridge::ptr bridge = RawBridge::create(clientSocket, destination, acceptor.get_io_service());
   bridge->shuttle();
 }
 
@@ -134,7 +134,7 @@ void SSLConnectionManager::interceptSSL(boost::shared_ptr<ip::tcp::socket> clien
 					ip::tcp::endpoint &destination,
 					bool wildcardOK)
 {
-  ip::tcp::socket serverSocket(acceptor.io_service());
+  ip::tcp::socket serverSocket(acceptor.get_io_service());
   boost::system::error_code error;
   serverSocket.connect(destination, error);
 

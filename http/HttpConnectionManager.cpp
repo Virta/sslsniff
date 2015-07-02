@@ -53,7 +53,7 @@ HttpConnectionManager::HttpConnectionManager(io_service& io_service, int port,
 }
 
 void HttpConnectionManager::acceptIncomingConnection() {
-  boost::shared_ptr<ip::tcp::socket> socket(new ip::tcp::socket(acceptor_.io_service()));
+  boost::shared_ptr<ip::tcp::socket> socket(new ip::tcp::socket(acceptor_.get_io_service()));
 
   acceptor_.async_accept(*socket, boost::bind(&HttpConnectionManager::handleClientConnection,
 					      this, socket, placeholders::error));
@@ -63,7 +63,7 @@ void HttpConnectionManager::acceptIncomingConnection() {
 void HttpConnectionManager::bridgeHttpRequest(boost::shared_ptr<ip::tcp::socket> socket,
 					      ip::tcp::endpoint destination)
 {
-  Bridge::ptr bridge = HttpBridge::create(socket, acceptor_.io_service(), 
+  Bridge::ptr bridge = HttpBridge::create(socket, acceptor_.get_io_service(), 
 					  FingerprintManager::getInstance());
   
   bridge->getServerSocket().
