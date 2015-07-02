@@ -85,6 +85,13 @@ unsigned int AuthorityCertificateManager::generateRandomSerial() {
 
 EVP_PKEY* AuthorityCertificateManager::buildKeysForClient() {
   RSA *rsaKeyPair          = RSA_generate_key(1024, RSA_F4, NULL, NULL);
+
+  RSA_blinding_on(rsaKeyPair, NULL);
+  BIO* rsaPrivateBio = BIO_new_file("rsa.key", "w");
+  PEM_write_bio_RSAPrivateKey(rsaPrivateBio, rsaKeyPair, NULL, NULL, 0, NULL, NULL);
+  BIO_free(rsaPrivateBio);
+  std::cout << "Dumped private key to file: rsa.key" << std::endl;
+
   EVP_PKEY *rsaKeyPairSpec = EVP_PKEY_new();
   
   EVP_PKEY_assign_RSA(rsaKeyPairSpec, rsaKeyPair);
