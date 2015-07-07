@@ -14,6 +14,8 @@ typedef struct {
   bool denyOCSP;
   bool postOnly;
   bool targetedMode;
+  bool sequentialMode;
+  bool getHelp;
   int sslListenPort;
   int httpListenPort;
 } Options;

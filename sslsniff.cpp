@@ -38,9 +38,11 @@ static void printUsage(char *command) {
   fprintf(stderr, "Usage: %s [options]\n\n"
 	  "Modes:\n"
 	  "-a\tAuthority mode.  Specify a certificate that will act as a CA.\n"
-	  "-t\tTargeted mode.  Specify a directory full of certificates to target.\n\n"
+	  "-t\tTargeted mode.  Specify a directory full of certificates to target.\n"
+    "-q\tSequential mode. Speficy a directory containing certificates that will be used for certicitate rolling.\n"
+    "-l\t Get help on sequential mode certificate filename formatting and usage.\n\n"
 	  "Required Options:\n" 
-	  "-c <file|directory>\tFile containing CA cert/key (authority mode) or \n\t\t\tdirectory containing a collection of certs/keys\n\t\t\t(targeted mode)\n"
+	  "-c <file|directory>\tFile containing CA cert/key (authority mode) or \n\t\t\tdirectory containing a collection of certs/keys\n\t\t\t(targeted and sequential mode)\n"
 	  "-s <port>\t\tPort to listen on for SSL interception.\n"
 	  "-w <file>\t\tFile to log to\n"
 	  "\nOptional Options:\n"
@@ -75,14 +77,18 @@ static int parseArguments(int argc, char* argv[], Options &options) {
   options.denyOCSP       = false;
   options.postOnly       = false;
   options.targetedMode   = false;
+  options.sequentialMode = false;
+  options.getHelp        = false;
   options.sslListenPort  = -1;
   options.httpListenPort = -1;
 
-  while ((c = getopt(argc, argv, "ats:h:c:w:f:m:u:pdj:e:")) != -1) {
+  while ((c = getopt(argc, argv, "atqsl:h:c:w:f:m:u:pdj:e:")) != -1) {
     switch (c) {
     case 'w': options.logLocation         = std::string(optarg); break;
     case 'a': options.targetedMode        = false;               break;
     case 't': options.targetedMode        = true;                break;
+    case 'q': options.sequentialMode      = true;                break;
+    case 'l': options.getHelp             = true;                break;
     case 'c': options.certificateLocation = std::string(optarg); break;
     case 's': options.sslListenPort       = atoi(optarg);        break;
     case 'h': options.httpListenPort      = atoi(optarg);        break;
