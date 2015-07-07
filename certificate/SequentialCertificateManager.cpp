@@ -21,8 +21,8 @@
 
 
 SequentialCertificateManager::SequentialCertificateManager(std::string &directory, std::string &chain) {
-	path certDir(directory);
-	path chainPath(chain);
+	boost::filesystem::path certDir(directory);
+	boost::filesystem::path chainPath(chain);
 
 	if (!boost::filesystem::exists(certDir)) throw NoSuchDirectoryException();
 

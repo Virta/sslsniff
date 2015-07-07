@@ -30,6 +30,7 @@
 #include "http/HttpConnectionManager.hpp"
 #include "certificate/TargetedCertificateManager.hpp"
 #include "certificate/AuthorityCertificateManager.hpp"
+#include "certificate/SequentialCertificateManager.hpp"
 #include "sslsniff.hpp"
 #include "Logger.hpp"
 #include "FingerprintManager.hpp"
@@ -37,9 +38,9 @@
 static void printUsage(char *command) {
   fprintf(stderr, "Usage: %s [options]\n\n"
 	  "Modes:\n"
-	  "-a\tAuthority mode.  Specify a certificate that will act as a CA.\n"
-	  "-t\tTargeted mode.  Specify a directory full of certificates to target.\n"
-    "-q\tSequential mode. Speficy a directory containing certificates that will be used for certicitate rolling.\n"
+	  "-a\t Authority mode.  Specify a certificate that will act as a CA.\n"
+	  "-t\t Targeted mode.  Specify a directory full of certificates to target.\n"
+    "-q\t Sequential mode. Speficy a directory containing certificates that will be used for certificate rolling.\n"
     "-l\t Get help on sequential mode certificate filename formatting and usage.\n\n"
 	  "Required Options:\n" 
 	  "-c <file|directory>\tFile containing CA cert/key (authority mode) or \n\t\t\tdirectory containing a collection of certs/keys\n\t\t\t(targeted and sequential mode)\n"
@@ -58,16 +59,13 @@ static void printUsage(char *command) {
 }
 
 static bool isOptionsValid(Options &options) {
-  if (options.certificateLocation.empty()   || 
-      options.sslListenPort == -1           || 
-      options.logLocation.empty())             return false;  // No cert, listen port, or log.
-  else if (options.httpListenPort == -1     &&
-	   !options.fingerprintList.empty())   return false;  // Fingerprinting but no http port.
-  else if (options.httpListenPort != -1     &&
-	   options.fingerprintList.empty())    return false;  // Http port but no fingerprinting.
-  else if (!options.addonLocation.empty()   &&
-	   options.addonHash.empty())          return false;
-  else                                         return true;
+       if (options.getHelp)             return true;
+  else if (options.certificateLocation.empty() ||  options.sslListenPort == -1 
+        || options.logLocation.empty()) return false;  // No cert, listen port, or log.
+  else if (options.httpListenPort == -1   && !options.fingerprintList.empty())   return false;  // Fingerprinting but no http port.
+  else if (options.httpListenPort != -1   &&  options.fingerprintList.empty())   return false;  // Http port but no fingerprinting.
+  else if (!options.addonLocation.empty() &&  options.addonHash.empty())         return false;
+  else                                  return true;
 }
 
 static int parseArguments(int argc, char* argv[], Options &options) {
@@ -82,7 +80,8 @@ static int parseArguments(int argc, char* argv[], Options &options) {
   options.sslListenPort  = -1;
   options.httpListenPort = -1;
 
-  while ((c = getopt(argc, argv, "atqsl:h:c:w:f:m:u:pdj:e:")) != -1) {
+  
+  while ((c = getopt(argc, argv, "atqls:h:c:w:f:m:u:pdj:e:")) != -1) {
     switch (c) {
     case 'w': options.logLocation         = std::string(optarg); break;
     case 'a': options.targetedMode        = false;               break;
@@ -120,8 +119,10 @@ static void initializeLogging(Options &options) {
 static CertificateManager* initializeCertificateManager(Options &options) {
   if (options.targetedMode) return new TargetedCertificateManager(options.certificateLocation,
 								  options.chainLocation);
-  else                      return new AuthorityCertificateManager(options.certificateLocation,
-								   options.chainLocation);
+  else if (options.sequentialMode) return new SequentialCertificateManager(options.certificateLocation,
+                  options.chainLocation);
+  else                     return new AuthorityCertificateManager(options.certificateLocation,
+								  options.chainLocation);
 }
 
 int main(int argc, char* argv[]) {
@@ -130,6 +131,11 @@ int main(int argc, char* argv[]) {
 
   if (parseArguments(argc, argv, options) < 0) {
     printUsage(argv[0]);
+  }
+
+  if (options.getHelp) {
+    std::cout << "Under construction" << std::endl;
+    exit(1);
   }
 
   initializeLogging(options);
