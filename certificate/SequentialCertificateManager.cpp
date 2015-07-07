@@ -35,14 +35,25 @@ SequentialCertificateManager::SequentialCertificateManager(std::string &director
 
 	for (boost::filesystem::directory_iterator iter(certDir); iter!=ender; iter++) {
 		if (!boost::filesystem::is_directory(iter->status())) {
-			Certificate *target = readCredentialsFromFile(iter->path(), true, true);
-
-			if (target->isWildcard()) certs.push_back(target);
-			else certs.push_front(target);
+			if (!isCAcert(iter)) readTargetedCertificate(iter);
+			
 		}
 	}
 
 	if (certs.empty()) throw NoSuchDirectoryException();
+}
+
+
+bool SequentialCertificateManager::isCAcert(boost::filesystem::directory_iterator &iter) {
+	return iter->path().filename().native().find("CA") != std::string::npos;
+}
+
+
+void SequentialCertificateManager::readTargetedCertificate(boost::filesystem::directory_iterator &iter) {
+	Certificate *target = readCredentialsFromFile(iter->path(), true, true);
+
+	if (target->isWildcard()) certs.push_back(target);
+	else certs.push_front(target);
 }
 
 
