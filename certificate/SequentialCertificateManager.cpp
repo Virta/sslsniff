@@ -37,7 +37,7 @@ SequentialCertificateManager::SequentialCertificateManager(std::string &director
 		if (!boost::filesystem::is_directory(iter->status())) {
 			Certificate *target = readCredentialsFromFile(iter->path(), true);
 
-			if (target->isWildCard()) certs.push_back(target);
+			if (target->isWildcard()) certs.push_back(target);
 			else certs.push_front(target);
 		}
 	}
@@ -57,7 +57,7 @@ bool SequentialCertificateManager::isValidTarget(boost::asio::ip::tcp::endpoint 
 
 
 void SequentialCertificateManager::getCertificateForTarget(boost::asio::ip::tcp::endpoint &endpoint,
-												bool wildcardOK.
+												bool wildcardOK,
 												X509 *serverCert,
 												Certificate **cert,
 												std::list<Certificate*> **chain) {
@@ -71,7 +71,7 @@ unsigned int SequentialCertificateManager::generateRandomSerial() {
 
 
 EVP_PKEY* SequentialCertificateManager::buildKeysForClient() {
-	RSA *rsaKeyPair RSA_generate_key(1024, RSA_F4, NULL, NULL);
+	RSA *rsaKeyPair = RSA_generate_key(1024, RSA_F4, NULL, NULL);
 
 	RSA_blinding_on(rsaKeyPair, NULL);
 
@@ -81,7 +81,7 @@ EVP_PKEY* SequentialCertificateManager::buildKeysForClient() {
 	if (filename.length() == 0) filename = "rsa.key";
 
 	BIO *rsaPrivateBio = BIO_new_file(filename.data(), "w");
-	PEM_write_bio_RSAPrivateKey(rsaPrivateBio, rsaKeyPair, NULL, NULL, 0 NULL, NULL);
+	PEM_write_bio_RSAPrivateKey(rsaPrivateBio, rsaKeyPair, NULL, NULL, 0, NULL, NULL);
 	BIO_free(rsaPrivateBio);
 	std::cout << "Dumped private key to file: " << filename << std::endl;
 
