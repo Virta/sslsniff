@@ -58,6 +58,18 @@ static void printUsage(char *command) {
   exit(1);
 }
 
+static void printHelp() {
+  fprintf(stderr, "\nUsing the sequential certificate rolling\n\n"
+    "File Naming:\n"
+      "\tAll certificate authority certificates that you wish to use for certificate signing and\n"
+      "\tdynamic certificate generation must contain 'CA' somewhere in the filename of the cert,\n"
+      "\tideally in the begginning.\n\n"
+
+      "\tAll other certificates that are used as targeted certificates can have any name that\n"
+      "\tdoes not contain 'CA'.\n\n"
+    );
+}
+
 static bool isOptionsValid(Options &options) {
        if (options.getHelp)             return true;
   else if (options.certificateLocation.empty() ||  options.sslListenPort == -1 
@@ -134,7 +146,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (options.getHelp) {
-    std::cout << "Under construction" << std::endl;
+    printHelp();
     exit(1);
   }
 
