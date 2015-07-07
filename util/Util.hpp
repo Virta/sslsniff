@@ -77,19 +77,26 @@ public:
 
   }
 
-  static void resolveName(std::string &name, std::list<boost::asio::ip::address> &results) {
+  static void resolveName(std::string &name, std::list<boost::asio::ip::address> &results, bool allowNonResolvable = false) {
     boost::asio::io_service io_service;
     boost::asio::ip::tcp::resolver resolver(io_service);
-    boost::asio::ip::tcp::resolver::query query(name, "https");    
-    boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+    boost::asio::ip::tcp::resolver::query query(name, "https");
+    boost::asio::ip::tcp::resolver::iterator endpoint_iterator;
     boost::asio::ip::tcp::resolver::iterator end;
-    
+
+    try {
+      endpoint_iterator = resolver.resolve(query);
+    } catch (std::exception &exception) {
+      std::cout << "Warning: could not resolve host: " << name << ": " << exception.what() << std::endl;
+    }
+
+
     while (endpoint_iterator != end) {
-//       std::cout << "Resolved To: " << (*endpoint_iterator).endpoint().address().to_string() << std::endl;
+      // std::cout << "Resolved To: " << (*endpoint_iterator).endpoint().address().to_string() << std::endl;
       results.push_back((*endpoint_iterator++).endpoint().address());
     }
     
-    if (results.empty()) throw UnresolvableCertificateException();    
+    if (results.empty() && !allowNonResolvable) throw UnresolvableCertificateException();
   }
 
 };

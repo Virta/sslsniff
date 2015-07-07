@@ -47,7 +47,7 @@ public:
 				       std::list<Certificate*> **chainCerts) = 0;
 
 protected:
-  Certificate* readCredentialsFromFile(const path &file, bool resolve);  
+  Certificate* readCredentialsFromFile(const path &file, bool resolve, bool allowNonResolvable = false);
 
 private:
   X509* loadCertificateFromFile(const char* file);

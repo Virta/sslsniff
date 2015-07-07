@@ -27,7 +27,7 @@ SequentialCertificateManager::SequentialCertificateManager(std::string &director
 	if (!boost::filesystem::exists(certDir)) throw NoSuchDirectoryException();
 
 	if (!chain.empty()) {
-		Certificate *chain = readCredentialsFromFile(chainPath, false);
+		Certificate *chain = readCredentialsFromFile(chainPath, false, true);
 		chainList.push_back(chain);
 	}
 	
@@ -35,7 +35,7 @@ SequentialCertificateManager::SequentialCertificateManager(std::string &director
 
 	for (boost::filesystem::directory_iterator iter(certDir); iter!=ender; iter++) {
 		if (!boost::filesystem::is_directory(iter->status())) {
-			Certificate *target = readCredentialsFromFile(iter->path(), true);
+			Certificate *target = readCredentialsFromFile(iter->path(), true, true);
 
 			if (target->isWildcard()) certs.push_back(target);
 			else certs.push_front(target);

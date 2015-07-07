@@ -107,7 +107,7 @@ private:
 public:
   Certificate() {}
 
-  Certificate(X509 *cert, EVP_PKEY* key, bool resolve) {
+  Certificate(X509 *cert, EVP_PKEY* key, bool resolve, bool allowNonResolvable = false) {
     this->cert = cert;
     this->key  = key;
     
@@ -117,13 +117,13 @@ public:
     if (resolve) {
 
       if (!isWildcard())
-	       Util::resolveName(name, ips);
+        Util::resolveName(name, ips);
       
       std::list<std::string>::iterator i   = ocspHosts.begin();
       std::list<std::string>::iterator end = ocspHosts.end();
       
       for ( ; i != end ; i++) {
-	       Util::resolveName(*i, ocspIps);
+	       Util::resolveName(*i, ocspIps, allowNonResolvable);
       }
     }
 

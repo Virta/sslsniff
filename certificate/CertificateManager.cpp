@@ -19,13 +19,13 @@
 
 #include "CertificateManager.hpp"
 
-Certificate* CertificateManager::readCredentialsFromFile(const path &file, bool resolve) {
+Certificate* CertificateManager::readCredentialsFromFile(const path &file, bool resolve, bool allowNonResolvable) {
   X509 *cert    = loadCertificateFromFile(system_complete(file).string().c_str());
   EVP_PKEY *key = loadKeyFromFile(system_complete(file).string().c_str());
 
   if (!cert || !key) throw BadCertificateException();
 
-  return new Certificate(cert, key, resolve);
+  return new Certificate(cert, key, resolve, allowNonResolvable);
 }
 
 X509* CertificateManager::loadCertificateFromFile(const char* file) {
