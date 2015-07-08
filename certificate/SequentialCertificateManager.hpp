@@ -36,14 +36,15 @@
 class SequentialCertificateManager : public CertificateManager {
 
 private:
-  Certificate *authority;
+  std::list<Certificate*> authorities;
   std::list<Certificate*> certs;
   std::list<Certificate*> chainList;
 
-	EVP_PKEY *leafPair;
+	EVP_PKEY *leafKeys;
 	EVP_PKEY* buildKeysForClient();
 	unsigned int generateRandomSerial();
   void readTargetedCertificate(boost::filesystem::directory_iterator &iter);
+  void readCAcertificate(boost::filesystem::directory_iterator &iter);
   bool isCAcert(boost::filesystem::directory_iterator &iter);
 
 public:

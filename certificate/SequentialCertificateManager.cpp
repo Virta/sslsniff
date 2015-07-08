@@ -25,27 +25,37 @@ SequentialCertificateManager::SequentialCertificateManager(std::string &director
 	boost::filesystem::path chainPath(chain);
 
 	if (!boost::filesystem::exists(certDir)) throw NoSuchDirectoryException();
-
-	if (!chain.empty()) {
-		Certificate *chain = readCredentialsFromFile(chainPath, false, true);
-		chainList.push_back(chain);
-	}
 	
 	boost::filesystem::directory_iterator ender;
 
 	for (boost::filesystem::directory_iterator iter(certDir); iter!=ender; iter++) {
 		if (!boost::filesystem::is_directory(iter->status())) {
 			if (!isCAcert(iter)) readTargetedCertificate(iter);
-			
+			else {
+				readCAcertificate(iter);
+			}
 		}
 	}
 
-	if (certs.empty()) throw NoSuchDirectoryException();
+	if (!chain.empty()) {
+		Certificate *chain = readCredentialsFromFile(chainPath, false, true);
+		chainList.push_back(chain);
+	}
+
+	if (certs.empty() && authorities.empty()) throw NoSuchDirectoryException();
+
+	this->leafKeys = buildKeysForClient();
 }
 
 
 bool SequentialCertificateManager::isCAcert(boost::filesystem::directory_iterator &iter) {
 	return iter->path().filename().native().find("CA") != std::string::npos;
+}
+
+
+void SequentialCertificateManager::readCAcertificate(boost::filesystem::directory_iterator &iter) {
+	Certificate *cert = readCredentialsFromFile(iter->path(), false);
+	this->authorities.push_back(cert);
 }
 
 

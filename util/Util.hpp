@@ -87,7 +87,7 @@ public:
     try {
       endpoint_iterator = resolver.resolve(query);
     } catch (std::exception &exception) {
-      std::cout << "Warning: could not resolve host: " << name << ": " << exception.what() << std::endl;
+      std::cout << "Warning: could not resolve host: \n\t" << name << "\nReason: " << exception.what() << std::endl;
     }
 
 
