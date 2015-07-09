@@ -107,7 +107,10 @@ void SequentialCertificateManager::getCertificateForTarget(boost::asio::ip::tcp:
 
 
 unsigned int SequentialCertificateManager::generateRandomSerial() {
-	return (unsigned int) 0;
+	unsigned int serial;
+	RAND_bytes((unsigned char*)&serial, sizeof(serial));
+
+	return serial;
 }
 
 
