@@ -75,17 +75,24 @@ bool SequentialCertificateManager::isOCSPAddress(boost::asio::ip::tcp::endpoint 
 
 	std::list<Certificate*>::iterator iter = certs.begin();
 	std::list<Certificate*>::iterator last = certs.end();
-	for (; iter != last; iter++) if ( (*iter)->isValidTarget(address, wildcardOK) ) return true;
+	for (; iter != last; iter++) if ( (*iter)->isOCSPAddress(address) ) return true;
 
 	iter = authorities.begin();
 	last = authorities.end();
-	for (; iter != last; iter++) if ( (*iter)->isValidTarget(address, wildcardOK) ) return true;
+	for (; iter != last; iter++) if ( (*iter)->isOCSPAddress(address) ) return true;
 
 	return false;
 }
 
 
 bool SequentialCertificateManager::isValidTarget(boost::asio::ip::tcp::endpoint &endpoint, bool wildcardOK) {
+	boost::asio::ip::address address = endpoint.address();
+
+	std::list<Certificate*>::iterator iter = certs.begin();
+	std::list<Certificate*>::iterator last = certs.end();
+	for(; iter != last; iter++ ) if ( (*iter)->isValidTarget(address, wildcardOK) ) return true;
+
+	if (!authorities.empty()) return true;
 	return false;
 }
 
