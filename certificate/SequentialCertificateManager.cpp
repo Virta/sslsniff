@@ -71,6 +71,16 @@ void SequentialCertificateManager::readTargetedCertificate(boost::filesystem::di
 
 
 bool SequentialCertificateManager::isOCSPAddress(boost::asio::ip::tcp::endpoint &endpoint) {
+	boost::asio::ip::address address = endpoint.address();
+
+	std::list<Certificate*>::iterator iter = certs.begin();
+	std::list<Certificate*>::iterator last = certs.end();
+	for (; iter != last; iter++) if ( (*iter)->isValidTarget(address, wildcardOK) ) return true;
+
+	iter = authorities.begin();
+	last = authorities.end();
+	for (; iter != last; iter++) if ( (*iter)->isValidTarget(address, wildcardOK) ) return true;
+
 	return false;
 }
 
