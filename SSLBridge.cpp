@@ -85,8 +85,10 @@ void SSLBridge::handshakeWithClient(CertificateManager &manager, bool wildcardOK
   SSL *clientSession = SSL_new(clientContext);
   SSL_set_fd(clientSession, clientSocket->native());
 
-  if (SSL_accept(clientSession) == 0) {
-    Logger::logError("SSL Accept Failed!");
+  int ssl_accept_ret;
+  if ( (ssl_accept_ret = SSL_accept(clientSession)) != 1) {
+    std::string errString(ERR_error_string(SSL_get_error(clientSession, ssl_accept_ret), NULL));
+    Logger::logError("SSL Accept Failed: " + errString);
     throw SSLConnectionError();
   }
 
@@ -113,8 +115,10 @@ void SSLBridge::handshakeWithServer() {
   SSL_set_fd(serverSession, serverSocket->native());
   SSL_set_options(serverSession, SSL_OP_ALL);
   
-  if (SSL_connect(serverSession) < 0) {
-    Logger::logError("Error on SSL Connect.");
+  int ssl_connect_ret;
+  if ( (ssl_connect_ret = SSL_connect(serverSession)) != 1) {
+    std::string errString(ERR_error_string(SSL_get_error(serverSession, ssl_connect_ret), NULL));
+    Logger::logError("Error on SSL Connect: " + errString);
     throw SSLConnectionError();
   }
 
@@ -157,7 +161,7 @@ bool SSLBridge::readFromClient() {
       return SSL_get_error(clientSession, bytesRead) == SSL_ERROR_WANT_READ ? true : false;
 
     if ((bytesWritten = SSL_write(serverSession, buf, bytesRead)) <= 0) 
-      return false; // FIXME
+      return SSL_get_error(serverSession, bytesWritten) == SSL_ERROR_WANT_WRITE ? true : false;
 
     Logger::logFromClient(serverName, buf, bytesRead);
 
@@ -176,7 +180,7 @@ bool SSLBridge::readFromServer() {
       return SSL_get_error(serverSession, bytesRead) == SSL_ERROR_WANT_READ ? true : false;
 
     if ((bytesWritten = SSL_write(clientSession, buf, bytesRead)) < bytesRead) 
-      return false; // FIXME
+      return SSL_get_error(clientSession, bytesWritten) == SSL_ERROR_WANT_WRITE ? true : false;
 
     Logger::logFromServer(serverName, buf, bytesRead);
   } while (SSL_pending(serverSession));
