@@ -54,7 +54,8 @@ static void printUsage(char *command) {
 	  "-d\t\t\tDeny OCSP requests for our certificates.\n"
 	  "-p\t\t\tOnly log HTTP POSTs\n"
 	  "-e <url>\t\tIntercept Mozilla Addon Updates\n"
-	  "-j <sha256>\t\tThe sha256sum value of the addon to inject\n\n", command);
+	  "-j <sha256>\t\tThe sha256sum value of the addon to inject\n"
+    "-k <key file>\t\tSpecify an RSA key to use, instead of generating one on startup.\n\n", command);
   exit(1);
 }
 
@@ -93,7 +94,7 @@ static int parseArguments(int argc, char* argv[], Options &options) {
   options.httpListenPort = -1;
 
   
-  while ((c = getopt(argc, argv, "atqls:h:c:w:f:m:u:pdj:e:")) != -1) {
+  while ((c = getopt(argc, argv, "atqls:h:c:w:f:m:u:pdj:e:k:")) != -1) {
     switch (c) {
     case 'w': options.logLocation         = std::string(optarg); break;
     case 'a': options.targetedMode        = false;               break;
@@ -110,6 +111,7 @@ static int parseArguments(int argc, char* argv[], Options &options) {
     case 'd': options.denyOCSP            = true;                break;
     case 'e': options.addonLocation       = std::string(optarg); break;
     case 'j': options.addonHash           = std::string(optarg); break;
+    case 'k': options.keyLocation         = std::string(optarg); break;
     default:
       return -1;
     }
@@ -132,9 +134,9 @@ static CertificateManager* initializeCertificateManager(Options &options) {
   if (options.targetedMode) return new TargetedCertificateManager(options.certificateLocation,
 								  options.chainLocation);
   else if (options.sequentialMode) return new SequentialCertificateManager(options.certificateLocation,
-                  options.chainLocation);
+                  options.chainLocation, options.keyLocation);
   else                     return new AuthorityCertificateManager(options.certificateLocation,
-								  options.chainLocation);
+								  options.chainLocation, options.keyLocation);
 }
 
 int main(int argc, char* argv[]) {

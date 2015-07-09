@@ -20,11 +20,12 @@
 #include "SequentialCertificateManager.hpp"
 
 
-SequentialCertificateManager::SequentialCertificateManager(std::string &directory, std::string &chain) {
+SequentialCertificateManager::SequentialCertificateManager(std::string &directory, std::string &chain, std::string &keyLocation) {
 	boost::filesystem::path certDir(directory);
 	boost::filesystem::path chainPath(chain);
+	boost::filesystem::path keyPath(keyLocation);
 
-	if (!boost::filesystem::exists(certDir)) throw NoSuchDirectoryException();
+	if (!boost::filesystem::exists(certDir)) throw std::runtime_error(std::string("No such directory: " + directory));
 	
 	boost::filesystem::directory_iterator ender;
 
@@ -44,7 +45,9 @@ SequentialCertificateManager::SequentialCertificateManager(std::string &director
 
 	if (certs.empty() && authorities.empty()) throw NoSuchDirectoryException();
 
-	this->leafKeys = buildKeysForClient();
+	if (!keyLocation.empty() && !boost::filesystem::exists(keyPath)) throw std::runtime_error(std::string("No such file: " + keyLocation));
+	if (!keyLocation.empty()) 	this->leafKeys = readKeyFile(system_complete(keyPath).string().c_str());
+	else 						this->leafKeys = buildKeysForClient();
 }
 
 
@@ -88,6 +91,18 @@ void SequentialCertificateManager::getCertificateForTarget(boost::asio::ip::tcp:
 
 unsigned int SequentialCertificateManager::generateRandomSerial() {
 	return (unsigned int) 0;
+}
+
+
+EVP_PKEY* SequentialCertificateManager::readKeyFile(const char* keyPath) {
+	BIO *rsaPrivateBio = BIO_new_file(keyPath, "r");
+	RSA *privateKey = PEM_read_bio_RSAPrivateKey(rsaPrivateBio, NULL, NULL, NULL);
+
+	BIO_free(rsaPrivateBio);
+
+	EVP_PKEY *rsaKeyPairSpec = EVP_PKEY_new();
+	EVP_PKEY_assign_RSA(rsaKeyPairSpec, privateKey);
+	return rsaKeyPairSpec;
 }
 
 

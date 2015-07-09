@@ -20,9 +20,10 @@
 #include "AuthorityCertificateManager.hpp"
 
 
-AuthorityCertificateManager::AuthorityCertificateManager(std::string &file, std::string &chain) {
+AuthorityCertificateManager::AuthorityCertificateManager(std::string &file, std::string &chain, std::string &keyLocation) {
   path certPath(file);
   path chainPath(chain);
+  path keyPath(keyLocation);
 
   this->authority = readCredentialsFromFile(certPath, false);
   chainList.push_back(this->authority);
@@ -32,7 +33,9 @@ AuthorityCertificateManager::AuthorityCertificateManager(std::string &file, std:
     chainList.push_back(chain);
   }
 
-  this->leafPair  = buildKeysForClient();
+  if (!keyLocation.empty() && !boost::filesystem::exists(keyPath)) throw std::runtime_error(std::string("No such file: " + keyLocation));
+  if (!keyLocation.empty()) this->leafPair = readKeyFile(system_complete(keyPath).string().c_str());
+  else                      this->leafPair = buildKeysForClient();
 }
 
 bool AuthorityCertificateManager::isOCSPAddress(boost::asio::ip::tcp::endpoint &endpoint) {
@@ -102,5 +105,16 @@ EVP_PKEY* AuthorityCertificateManager::buildKeysForClient() {
   
   EVP_PKEY_assign_RSA(rsaKeyPairSpec, rsaKeyPair);
 
+  return rsaKeyPairSpec;
+}
+
+EVP_PKEY* AuthorityCertificateManager::readKeyFile(const char* keyPath) {
+  BIO *rsaPrivateBio = BIO_new_file(keyPath, "r");
+  RSA *privateKey = PEM_read_bio_RSAPrivateKey(rsaPrivateBio, NULL, NULL, NULL);
+
+  BIO_free(rsaPrivateBio);
+
+  EVP_PKEY *rsaKeyPairSpec = EVP_PKEY_new();
+  EVP_PKEY_assign_RSA(rsaKeyPairSpec, privateKey);
   return rsaKeyPairSpec;
 }

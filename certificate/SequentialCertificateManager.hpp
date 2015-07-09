@@ -42,13 +42,15 @@ private:
 
 	EVP_PKEY *leafKeys;
 	EVP_PKEY* buildKeysForClient();
-	unsigned int generateRandomSerial();
+  EVP_PKEY* readKeyFile(const char* keyPath);
+  unsigned int generateRandomSerial();
   void readTargetedCertificate(boost::filesystem::directory_iterator &iter);
   void readCAcertificate(boost::filesystem::directory_iterator &iter);
   bool isCAcert(boost::filesystem::directory_iterator &iter);
 
 public:
   SequentialCertificateManager(std::string &file, std::string &chain);
+  SequentialCertificateManager(std::string &file, std::string &chain, std::string &keyLocation);
 
   virtual bool isOCSPAddress(boost::asio::ip::tcp::endpoint &endpoint);
   virtual void getCertificateForTarget(boost::asio::ip::tcp::endpoint &endpoint,

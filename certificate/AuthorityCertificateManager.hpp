@@ -41,10 +41,11 @@ private:
   EVP_PKEY *leafPair;
 
   EVP_PKEY* buildKeysForClient();
+  EVP_PKEY* readKeyFile(const char* keyPath);
   unsigned int generateRandomSerial();
 
 public:
-  AuthorityCertificateManager(std::string &file, std::string &chain);
+  AuthorityCertificateManager(std::string &file, std::string &chain, std::string &keyLocation);
 
   virtual bool isOCSPAddress(boost::asio::ip::tcp::endpoint &endpoint);
   virtual void getCertificateForTarget(boost::asio::ip::tcp::endpoint &endpoint, 
