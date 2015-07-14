@@ -15,4 +15,4 @@ sslsniff
 compile
 rsa.key
 certs/*
-
+.nfs*
