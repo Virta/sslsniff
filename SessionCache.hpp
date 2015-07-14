@@ -30,7 +30,7 @@
 #include <boost/bind.hpp>
 
 #define CACHE_SIZE 20
-#define MAX_ENCODING_SIZE 4096
+#define MAX_ENCODING_SIZE 16384
 #define MAX_ID_SIZE 512
 
 typedef struct {
