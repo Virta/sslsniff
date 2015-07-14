@@ -78,6 +78,7 @@ private:
   int forwardData(SSL *from, SSL *to);
   void setServerName();
   bool readFromServer();
+  std::string getErrorString(SSL *session, int errNo);
 
 public:
 

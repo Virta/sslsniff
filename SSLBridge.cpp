@@ -87,12 +87,24 @@ void SSLBridge::handshakeWithClient(CertificateManager &manager, bool wildcardOK
 
   int ssl_accept_ret;
   if ( (ssl_accept_ret = SSL_accept(clientSession)) != 1) {
-    std::string errString(ERR_error_string(SSL_get_error(clientSession, ssl_accept_ret), NULL));
+    std::string errString = getErrorString(clientSession, ssl_accept_ret);
     Logger::logError("SSL Accept Failed: " + errString);
     throw SSLConnectionError();
   }
 
   this->clientSession = clientSession;
+}
+
+std::string SSLBridge::getErrorString(SSL *session, int errNo) {
+  std::string errString(ERR_error_string(SSL_get_error(session, errNo), NULL));
+
+  int err;
+  while ((err = ERR_get_error()) != 0) {
+    std::string prim(ERR_error_string(err, NULL));
+    errString += prim + " ";
+  }
+
+  return errString;
 }
 
 void SSLBridge::handshakeWithServer() {
@@ -117,7 +129,7 @@ void SSLBridge::handshakeWithServer() {
   
   int ssl_connect_ret;
   if ( (ssl_connect_ret = SSL_connect(serverSession)) != 1) {
-    std::string errString(ERR_error_string(SSL_get_error(serverSession, ssl_connect_ret), NULL));
+    std::string errString = getErrorString(serverSession, ssl_connect_ret);
     Logger::logError("Error on SSL Connect: " + errString);
     throw SSLConnectionError();
   }
