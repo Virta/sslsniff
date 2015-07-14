@@ -22,10 +22,12 @@
 #include <log4cpp/Category.hh>
 #include <log4cpp/FileAppender.hh>
 #include <log4cpp/BasicLayout.hh>
+ #include <log4cpp/PatternLayout.hh>
 
 void Logger::initialize(std::string &path, bool postOnly) {
   log4cpp::Appender* app  = new log4cpp::FileAppender("FileAppender", path);
-  log4cpp::Layout* layout = new log4cpp::BasicLayout();
+  log4cpp::PatternLayout* layout = new log4cpp::PatternLayout();
+  layout->setConversionPattern("%d{%d-%m-%Y %H:%M:%S,%l} %p %c %x: %m%n");
   app->setLayout(layout);
 
   log4cpp::Category &sslsniff = log4cpp::Category::getInstance("sslsniff");
