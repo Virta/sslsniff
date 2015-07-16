@@ -79,6 +79,7 @@ private:
   void setServerName();
   bool readFromServer();
   std::string getErrorString(SSL *session, int errNo);
+  DH* setupDH();
 
 public:
 

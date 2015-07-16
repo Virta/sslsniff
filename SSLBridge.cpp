@@ -19,6 +19,7 @@
 
 #include "SSLBridge.hpp"
 #include <string.h>
+#include <errno.h>
 
 using namespace boost::asio;
 
@@ -70,6 +71,22 @@ void SSLBridge::setServerName() {
   free(serverNameStr);
 }
 
+DH* SSLBridge::setupDH() {
+  DH *DH_parameters;
+  FILE *parameter_file;
+  parameter_file = fopen("DH_params.pem", "r");
+  if (parameter_file) {
+    DH_parameters = PEM_read_DHparams(parameter_file, NULL, NULL, NULL);
+    fclose(parameter_file);
+  } else std::cout << "unable to open DH parameter file: DH_params.pem" << std::endl;
+
+  if (!DH_parameters) std::cout << "Unable to read DH parameters" << std::endl;
+  int codes;
+  if (DH_check(DH_parameters, &codes) != 1) std::cout << "Error while checking DH parameters: " + getErrorString(NULL, 0) << std::endl;
+  if (DH_generate_key(DH_parameters) != 1) std::cout << "Error generating keys: " + getErrorString(NULL, 0) << std::endl;
+  return DH_parameters;
+}
+
 void SSLBridge::handshakeWithClient(CertificateManager &manager, bool wildcardOK) {
   Certificate *leaf;
   std::list<Certificate*> *chain;
@@ -80,10 +97,14 @@ void SSLBridge::handshakeWithClient(CertificateManager &manager, bool wildcardOK
   setServerName();
   
   SSL_CTX *clientContext = SSL_CTX_new(SSLv23_server_method());
+
+  DH *DH_parameters = setupDH();
+  if (SSL_CTX_set_tmp_dh(clientContext, DH_parameters));
+
   buildClientContext(clientContext, leaf, chain);
 
   SSL *clientSession = SSL_new(clientContext);
-  SSL_set_fd(clientSession, clientSocket->native());
+  SSL_set_fd(clientSession, clientSocket->native_handle());
 
   int ssl_accept_ret;
   if ( (ssl_accept_ret = SSL_accept(clientSession)) != 1) {
@@ -96,12 +117,21 @@ void SSLBridge::handshakeWithClient(CertificateManager &manager, bool wildcardOK
 }
 
 std::string SSLBridge::getErrorString(SSL *session, int errNo) {
-  std::string errString(ERR_error_string(SSL_get_error(session, errNo), NULL));
+  std::string errString;
+  std::string sysErr = strerror(errno);
+  errString += "SYSTEM: " + sysErr;
+
+  if (session) {
+    std::ostringstream conversion;
+    conversion << errNo;
+    std::string sslError(ERR_error_string(SSL_get_error(session, errNo), NULL));
+    errString += "; SSL (" + conversion.str() + "): " + sslError;
+  }
 
   int err;
   while ((err = ERR_get_error()) != 0) {
     std::string prim(ERR_error_string(err, NULL));
-    errString += prim + " ";
+    errString += "; ERR: " + prim;
   }
 
   return errString;
@@ -123,8 +153,10 @@ void SSLBridge::handshakeWithServer() {
     SSL_SESSION_free(sessionId);
   }
 
+
+
   SSL_set_connect_state(serverSession);
-  SSL_set_fd(serverSession, serverSocket->native());
+  SSL_set_fd(serverSession, serverSocket->native_handle());
   SSL_set_options(serverSession, SSL_OP_ALL);
   
   int ssl_connect_ret;
@@ -142,8 +174,8 @@ void SSLBridge::handshakeWithServer() {
 }
 
 void SSLBridge::shuttleData() {
-  struct pollfd fds[2] = {{clientSocket->native(), POLLIN | POLLPRI | POLLHUP | POLLERR, 0},
-			  {serverSocket->native(), POLLIN | POLLPRI | POLLHUP | POLLERR, 0}};
+  struct pollfd fds[2] = {{clientSocket->native_handle(), POLLIN | POLLPRI | POLLHUP | POLLERR, 0},
+			  {serverSocket->native_handle(), POLLIN | POLLPRI | POLLHUP | POLLERR, 0}};
 
   for (;;) {
     if (poll(fds, 2, -1) < 0)        return;
@@ -164,16 +196,20 @@ int SSLBridge::isClosed(int revents) {
 }
 
 bool SSLBridge::readFromClient() {
-  char buf[4096];
+  char buf[16384];
   int bytesRead;
   int bytesWritten;
   
   do {
-    if ((bytesRead = SSL_read(clientSession, buf, sizeof(buf))) <= 0)   
-      return SSL_get_error(clientSession, bytesRead) == SSL_ERROR_WANT_READ ? true : false;
+    if ((bytesRead = SSL_read(clientSession, buf, sizeof(buf))) <= 0) {
+      int sslError = SSL_get_error(clientSession, bytesRead);
+      return  sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE;
+    }
 
-    if ((bytesWritten = SSL_write(serverSession, buf, bytesRead)) <= 0) 
-      return SSL_get_error(serverSession, bytesWritten) == SSL_ERROR_WANT_WRITE ? true : false;
+    if ((bytesWritten = SSL_write(serverSession, buf, bytesRead)) <= 0) {
+      int sslError = SSL_get_error(serverSession, bytesWritten);
+      return  sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE;
+    }
 
     Logger::logFromClient(serverName, buf, bytesRead);
 
@@ -183,16 +219,20 @@ bool SSLBridge::readFromClient() {
 }
 
 bool SSLBridge::readFromServer() {
-  char buf[4096];
+  char buf[16384];
   int bytesRead;
   int bytesWritten;
 
   do {
-    if ((bytesRead    = SSL_read(serverSession, buf, sizeof(buf))) <= 0)       
-      return SSL_get_error(serverSession, bytesRead) == SSL_ERROR_WANT_READ ? true : false;
+    if ((bytesRead = SSL_read(serverSession, buf, sizeof(buf))) <= 0) {
+      int sslError = SSL_get_error(serverSession, bytesRead);
+      return  sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE;
+    }
 
-    if ((bytesWritten = SSL_write(clientSession, buf, bytesRead)) < bytesRead) 
-      return SSL_get_error(clientSession, bytesWritten) == SSL_ERROR_WANT_WRITE ? true : false;
+    if ((bytesWritten = SSL_write(clientSession, buf, bytesRead)) <= 0) {
+      int sslError = SSL_get_error(clientSession, bytesWritten);
+      return  sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE;
+    }
 
     Logger::logFromServer(serverName, buf, bytesRead);
   } while (SSL_pending(serverSession));
