@@ -40,6 +40,11 @@ private:
   std::list<Certificate*> certs;
   std::list<Certificate*> chainList;
 
+  std::map<boost::asio::ip::tcp::endpoint, std::list<Certificate*>::iterator> certMap;
+  std::map<boost::asio::ip::tcp::endpoint, std::list<Certificate*>::iterator> authMap;
+  std::map<boost::asio::ip::tcp::endpoint, bool> endpointCertLock;
+  Certificate* candidate;
+
 	EVP_PKEY *leafKeys;
 	EVP_PKEY* buildKeysForClient();
   EVP_PKEY* readKeyFile(const char* keyPath);
@@ -47,6 +52,18 @@ private:
   void readTargetedCertificate(boost::filesystem::directory_iterator &iter);
   void readCAcertificate(boost::filesystem::directory_iterator &iter);
   bool isCAcert(boost::filesystem::directory_iterator &iter);
+  void fetchNextTargetedCert(boost::asio::ip::tcp::endpoint &endpoint,
+                        bool wildcardOK,
+                        X509 *serverCert,
+                        Certificate **cert,
+                        std::list<Certificate*> **chain,
+                        std::list<Certificate*>::iterator &iter);
+  void fetchNextGeneratedCert(boost::asio::ip::tcp::endpoint &endpoint,
+                        bool wildcardOK,
+                        X509 *serverCert,
+                        Certificate **cert,
+                        std::list<Certificate*> **chain,
+                        std::list<Certificate*>::iterator &iter);
 
 public:
   SequentialCertificateManager(std::string &file, std::string &chain);

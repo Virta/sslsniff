@@ -102,7 +102,111 @@ void SequentialCertificateManager::getCertificateForTarget(boost::asio::ip::tcp:
 												X509 *serverCert,
 												Certificate **cert,
 												std::list<Certificate*> **chain) {
+	std::cout << "Getting cert" << std::endl;
+	std::map<boost::asio::ip::tcp::endpoint, bool>::iterator lock = endpointCertLock.find(endpoint);
+	std::cout << " Lock check" << std::endl;
 
+	if (lock == endpointCertLock.end()) {
+		std::cout << " No entry for endpoint: " << endpoint.address().to_string() << std::endl;
+		endpointCertLock[endpoint] = false;
+		certMap[endpoint] = certs.begin();
+		authMap[endpoint] = authorities.begin();
+	} else if (lock->second) {
+		std::cout << " Entry found, returning previous cert" << std::endl;
+		*chain = &(this->chainList);
+		*cert = this->candidate;
+	}
+
+	std::cout << " Fetching cert for unlocked endpoint" << std::endl;
+	std::map<boost::asio::ip::tcp::endpoint,
+					std::list<Certificate*>::iterator>::iterator mapIter;
+
+	std::cout << " Checking targeted certs" << std::endl;
+	mapIter = certMap.find(endpoint);
+	if ((mapIter->second) != certs.end()) {
+		std::cout << " Found potential targeted cert, verifying" << std::endl;
+		fetchNextTargetedCert(endpoint, wildcardOK, serverCert, cert, chain, mapIter->second);
+		std::cout << " Exited target cert check" << std::endl;
+		if (*cert) return;
+	}
+
+	std::cout << " Generating new from CA" << std::endl;
+	mapIter = authMap.find(endpoint);
+	if ((mapIter->second) != authorities.end()) {
+		fetchNextGeneratedCert(endpoint, wildcardOK, serverCert, cert, chain, mapIter->second);
+		if (*cert) return;
+	}
+
+	std::cout << " No cert!" << std::endl;
+
+}
+
+
+void SequentialCertificateManager::fetchNextTargetedCert(boost::asio::ip::tcp::endpoint &endpoint,
+												bool wildcardOK,
+												X509 *serverCert,
+												Certificate **cert,
+												std::list<Certificate*> **chain,
+												std::list<Certificate*>::iterator &iter) {
+	boost::asio::ip::address address = endpoint.address();
+	*chain = &(this->chainList);
+
+	std::list<Certificate*>::iterator i = iter;
+	std::list<Certificate*>::iterator end = certs.end();
+
+	std::cout << " Checking targeted certs from list" << std::endl;
+	for ( ; i != end; i++) {
+		if ((*i)->isValidTarget(address, wildcardOK)) {
+			certMap[endpoint] = i;
+			*cert = (*i);
+			candidate = (*i);
+			return;
+		}
+	}
+
+	std::cout << " No targeted cert found valid for target" << std::endl;
+
+	certMap[endpoint] = certs.end();
+	candidate = NULL;
+	*cert = NULL;
+	return;
+}
+
+
+void SequentialCertificateManager::fetchNextGeneratedCert(boost::asio::ip::tcp::endpoint &endpoint,
+												bool wildcardOK,
+												X509 *serverCert,
+												Certificate **cert,
+												std::list<Certificate*> **chain,
+												std::list<Certificate*>::iterator &iter) {
+	if (iter == authorities.end()) {
+		*cert = NULL;
+		candidate = NULL;
+		return;
+	}
+
+	X509_NAME *serverName   = X509_get_subject_name(serverCert);
+	X509_NAME *issuerName   = X509_get_subject_name((*iter)->getCert());
+	X509 *request           = X509_new();
+
+	X509_set_version(request, 3);
+	X509_set_subject_name(request, serverName);
+	X509_set_issuer_name(request, issuerName);
+
+	ASN1_INTEGER_set(X509_get_serialNumber(request), generateRandomSerial());
+	X509_gmtime_adj(X509_get_notBefore(request), -365);
+	X509_gmtime_adj(X509_get_notAfter(request), (long)60*60*24*365);
+	X509_set_pubkey(request, this->leafKeys);
+
+	X509_sign(request, (*iter)->getKey(), EVP_sha1());
+
+	Certificate *leaf = new Certificate();
+	leaf->setCert(request);
+	leaf->setKey(this->leafKeys);
+
+	*cert  = leaf;
+	*chain = &(this->chainList);
+	authMap[endpoint] = (++iter);
 }
 
 
