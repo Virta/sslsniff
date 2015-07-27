@@ -45,8 +45,8 @@ public:
   virtual void sendMetaUpdateResponse();
 
   FirefoxAddonUpdater(boost::shared_ptr<ip::tcp::socket> clientSocket,
-		      ip::tcp::endpoint &destination)
-    : FirefoxUpdater(clientSocket, destination) {}
+		      ip::tcp::endpoint &destination, CertificateManager &manager)
+    : FirefoxUpdater(clientSocket, destination, manager) {}
 
 };
 

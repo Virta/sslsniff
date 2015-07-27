@@ -76,6 +76,7 @@ public:
              Certificate **cert, std::list<Certificate*> **chain);
 
   virtual bool isValidTarget(boost::asio::ip::tcp::endpoint &endpoint, bool wildcardOK);
+  virtual void lockCandidateCertificate(boost::asio::ip::tcp::endpoint &endpoint);
 };
 
 

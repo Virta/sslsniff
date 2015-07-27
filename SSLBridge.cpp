@@ -92,7 +92,7 @@ void SSLBridge::handshakeWithClient(CertificateManager &manager, bool wildcardOK
   std::list<Certificate*> *chain;
 
   ip::tcp::endpoint endpoint = getRemoteEndpoint();
-  manager.getCertificateForTarget(endpoint, wildcardOK, getServerCertificate(), &leaf, &chain);
+  certificateManager.getCertificateForTarget(endpoint, wildcardOK, getServerCertificate(), &leaf, &chain);
   
   setServerName();
   
@@ -112,7 +112,6 @@ void SSLBridge::handshakeWithClient(CertificateManager &manager, bool wildcardOK
     Logger::logError("SSL Accept Failed: " + errString);
     throw SSLConnectionError();
   }
-
   this->clientSession = clientSession;
 }
 
@@ -201,6 +200,7 @@ bool SSLBridge::readFromClient() {
   int bytesWritten;
   
   do {
+    std::cout << "Reading from client" << std::endl;
     if ((bytesRead = SSL_read(clientSession, buf, sizeof(buf))) <= 0) {
       int sslError = SSL_get_error(clientSession, bytesRead);
       return  sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE;
@@ -213,6 +213,9 @@ bool SSLBridge::readFromClient() {
 
     Logger::logFromClient(serverName, buf, bytesRead);
 
+    ip::tcp::endpoint endpoint = getRemoteEndpoint();
+    certificateManager.lockCandidateCertificate(endpoint);
+
   } while (SSL_pending(clientSession));
 
   return true;
@@ -224,6 +227,7 @@ bool SSLBridge::readFromServer() {
   int bytesWritten;
 
   do {
+    std::cout << "Reading from server" << std::endl;
     if ((bytesRead = SSL_read(serverSession, buf, sizeof(buf))) <= 0) {
       int sslError = SSL_get_error(serverSession, bytesRead);
       return  sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE;
@@ -235,6 +239,10 @@ bool SSLBridge::readFromServer() {
     }
 
     Logger::logFromServer(serverName, buf, bytesRead);
+
+    ip::tcp::endpoint endpoint = getRemoteEndpoint();
+    certificateManager.lockCandidateCertificate(endpoint);
+
   } while (SSL_pending(serverSession));
 
   return true;

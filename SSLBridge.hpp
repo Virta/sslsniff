@@ -65,11 +65,13 @@ protected:
   SSL *serverSession;
   SSL *clientSession;
 
+
   virtual ip::tcp::endpoint getRemoteEndpoint();
   virtual bool readFromClient();
 
 private:
   SessionCache *cache;
+  CertificateManager &certificateManager;
 
   X509* getServerCertificate();
   void buildClientContext(SSL_CTX *context, Certificate *leaf, std::list<Certificate*> *chain);
@@ -84,9 +86,9 @@ private:
 public:
 
   SSLBridge(boost::shared_ptr<ip::tcp::socket> clientSocket,
-	    ip::tcp::socket *serverSocket) 
+	    ip::tcp::socket *serverSocket, CertificateManager &manager)
     : clientSocket(clientSocket), serverSocket(serverSocket),
-      serverSession(), clientSession(), closed(false)
+      serverSession(), clientSession(), closed(false), certificateManager(manager)
   {
     cache = SessionCache::getInstance();
   }

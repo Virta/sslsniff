@@ -87,7 +87,7 @@ void SSLConnectionManager::interceptUpdate(boost::shared_ptr<ip::tcp::socket> cl
   try {
     Logger::logError("Intercepting Update...");
 
-    FirefoxUpdater updater(clientSocket, destination);
+    FirefoxUpdater updater(clientSocket, destination, certificateManager);
     updater.handshakeWithClient(certificateManager, wildcardOK);
     updater.readMetaUpdateRequest();
     updater.sendMetaUpdateResponse();
@@ -112,7 +112,7 @@ void SSLConnectionManager::interceptAddon(boost::shared_ptr<ip::tcp::socket> cli
   try {
     Logger::logError("Intercepting addon..");
 
-    FirefoxAddonUpdater updater(clientSocket, destination);
+    FirefoxAddonUpdater updater(clientSocket, destination, certificateManager);
     updater.handshakeWithClient(certificateManager, wildcardOK);
     updater.readMetaUpdateRequest();
     updater.sendMetaUpdateResponse();
@@ -141,8 +141,8 @@ void SSLConnectionManager::interceptSSL(boost::shared_ptr<ip::tcp::socket> clien
   if (!error) {
     try {
       boost::shared_ptr<SSLBridge> bridge((destination.port() == HTTPS_PORT) ? 
-					  new HTTPSBridge(clientSocket, &serverSocket) : 
-					  new SSLBridge(clientSocket, &serverSocket));
+					  new HTTPSBridge(clientSocket, &serverSocket, certificateManager) :
+					  new SSLBridge(clientSocket, &serverSocket, certificateManager));
 
       bridge->handshakeWithServer();
       bridge->handshakeWithClient(certificateManager, wildcardOK);

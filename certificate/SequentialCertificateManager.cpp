@@ -19,7 +19,6 @@
 
 #include "SequentialCertificateManager.hpp"
 
-
 SequentialCertificateManager::SequentialCertificateManager(std::string &directory, std::string &chain, std::string &keyLocation) {
 	boost::filesystem::path certDir(directory);
 	boost::filesystem::path chainPath(chain);
@@ -102,19 +101,20 @@ void SequentialCertificateManager::getCertificateForTarget(boost::asio::ip::tcp:
 												X509 *serverCert,
 												Certificate **cert,
 												std::list<Certificate*> **chain) {
-	std::cout << "Getting cert" << std::endl;
+	std::cout << "Getting cert for endpoint: " << endpoint.address().to_string() << std::endl;
 	std::map<boost::asio::ip::tcp::endpoint, bool>::iterator lock = endpointCertLock.find(endpoint);
 	std::cout << " Lock check" << std::endl;
 
 	if (lock == endpointCertLock.end()) {
-		std::cout << " No entry for endpoint: " << endpoint.address().to_string() << std::endl;
+		std::cout << " No entry for endpoint" << std::endl;
 		endpointCertLock[endpoint] = false;
 		certMap[endpoint] = certs.begin();
 		authMap[endpoint] = authorities.begin();
 	} else if (lock->second) {
 		std::cout << " Entry found, returning previous cert" << std::endl;
 		*chain = &(this->chainList);
-		*cert = this->candidate;
+		*cert = candidate;
+		return;
 	}
 
 	std::cout << " Fetching cert for unlocked endpoint" << std::endl;
@@ -206,7 +206,18 @@ void SequentialCertificateManager::fetchNextGeneratedCert(boost::asio::ip::tcp::
 
 	*cert  = leaf;
 	*chain = &(this->chainList);
+	candidate = leaf;
 	authMap[endpoint] = (++iter);
+}
+
+
+void SequentialCertificateManager::lockCandidateCertificate(boost::asio::ip::tcp::endpoint &endpoint){
+	std::map<boost::asio::ip::tcp::endpoint, bool>::iterator lock = endpointCertLock.find(endpoint);
+	if (lock != endpointCertLock.end()) {
+		endpointCertLock[endpoint] = true;
+	} else {
+		throw std::runtime_error(std::string("Can't lock an endpoint cert that is not stored!"));
+	}
 }
 
 

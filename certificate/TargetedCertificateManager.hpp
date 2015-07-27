@@ -52,10 +52,11 @@ public:
   virtual bool isOCSPAddress(boost::asio::ip::tcp::endpoint &endpoint);
   virtual bool isValidTarget(boost::asio::ip::tcp::endpoint &endpoint, bool wildcardOK);
   virtual void getCertificateForTarget(boost::asio::ip::tcp::endpoint &endpoint,
-				       bool wildcardOK,
-				       X509 *serverCertificate,
-				       Certificate **cert,
-				       std::list<Certificate*> **chainCerts);
+               bool wildcardOK,
+               X509 *serverCertificate,
+               Certificate **cert,
+               std::list<Certificate*> **chainCerts);
+  virtual void lockCandidateCertificate(boost::asio::ip::tcp::endpoint &endpoint){};
 
 };
 

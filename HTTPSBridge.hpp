@@ -39,8 +39,8 @@ protected:
 public:
 
   HTTPSBridge(boost::shared_ptr<ip::tcp::socket> clientSocket,
-	    ip::tcp::socket *serverSocket) 
-    : SSLBridge(clientSocket, serverSocket) {}
+	    ip::tcp::socket *serverSocket, CertificateManager &manager)
+    : SSLBridge(clientSocket, serverSocket, manager) {}
 
 };
 

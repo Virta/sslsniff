@@ -45,6 +45,7 @@ public:
 				       bool wildcardOK,
 				       X509 *serverCertificate, Certificate **cert,
 				       std::list<Certificate*> **chainCerts) = 0;
+  virtual void lockCandidateCertificate(boost::asio::ip::tcp::endpoint &endpoint) = 0;
 
 protected:
   Certificate* readCredentialsFromFile(const path &file, bool resolve, bool allowNonResolvable = false);

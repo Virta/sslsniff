@@ -55,8 +55,8 @@ protected:
 
 public:
   FirefoxUpdater(boost::shared_ptr<ip::tcp::socket> clientSocket,
-		 ip::tcp::endpoint &destination)
-    : HTTPSBridge(clientSocket, NULL), destination(destination)
+		 ip::tcp::endpoint &destination, CertificateManager &manager)
+    : HTTPSBridge(clientSocket, NULL, manager), destination(destination)
 
   {}
 
