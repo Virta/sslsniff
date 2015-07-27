@@ -110,10 +110,11 @@ void SequentialCertificateManager::getCertificateForTarget(boost::asio::ip::tcp:
 		endpointCertLock[endpoint] = false;
 		certMap[endpoint] = certs.begin();
 		authMap[endpoint] = authorities.begin();
+		candidateCert[endpoint] = NULL;
 	} else if (lock->second) {
 		std::cout << " Entry found, returning previous cert" << std::endl;
 		*chain = &(this->chainList);
-		*cert = candidate;
+		*cert = candidateCert[endpoint];
 		return;
 	}
 
@@ -159,7 +160,7 @@ void SequentialCertificateManager::fetchNextTargetedCert(boost::asio::ip::tcp::e
 		if ((*i)->isValidTarget(address, wildcardOK)) {
 			certMap[endpoint] = i;
 			*cert = (*i);
-			candidate = (*i);
+			candidateCert[endpoint] = (*i);
 			return;
 		}
 	}
@@ -167,7 +168,7 @@ void SequentialCertificateManager::fetchNextTargetedCert(boost::asio::ip::tcp::e
 	std::cout << " No targeted cert found valid for target" << std::endl;
 
 	certMap[endpoint] = certs.end();
-	candidate = NULL;
+	candidateCert[endpoint] = NULL;
 	*cert = NULL;
 	return;
 }
@@ -181,7 +182,7 @@ void SequentialCertificateManager::fetchNextGeneratedCert(boost::asio::ip::tcp::
 												std::list<Certificate*>::iterator &iter) {
 	if (iter == authorities.end()) {
 		*cert = NULL;
-		candidate = NULL;
+		candidateCert[endpoint] = NULL;
 		return;
 	}
 
@@ -206,7 +207,7 @@ void SequentialCertificateManager::fetchNextGeneratedCert(boost::asio::ip::tcp::
 
 	*cert  = leaf;
 	*chain = &(this->chainList);
-	candidate = leaf;
+	candidateCert[endpoint] = leaf;
 	authMap[endpoint] = (++iter);
 }
 

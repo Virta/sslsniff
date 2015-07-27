@@ -43,7 +43,7 @@ private:
   std::map<boost::asio::ip::tcp::endpoint, std::list<Certificate*>::iterator> certMap;
   std::map<boost::asio::ip::tcp::endpoint, std::list<Certificate*>::iterator> authMap;
   std::map<boost::asio::ip::tcp::endpoint, bool> endpointCertLock;
-  Certificate* candidate;
+  std::map<boost::asio::ip::tcp::endpoint, Certificate*> candidateCert;
 
 	EVP_PKEY *leafKeys;
 	EVP_PKEY* buildKeysForClient();
