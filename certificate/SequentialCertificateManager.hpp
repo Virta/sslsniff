@@ -64,6 +64,12 @@ private:
                         Certificate **cert,
                         std::list<Certificate*> **chain,
                         std::list<Certificate*>::iterator &iter);
+  void generateSelfSigned(boost::asio::ip::tcp::endpoint &endpoint,
+                        bool wildcardOK,
+                        X509 *serverCert,
+                        Certificate **cert,
+                        std::list<Certificate*> **chain);
+  int add_ext(X509 *cert, int nid, const char *value);
 
 public:
   SequentialCertificateManager(std::string &file, std::string &chain);

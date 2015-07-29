@@ -138,6 +138,9 @@ void SequentialCertificateManager::getCertificateForTarget(boost::asio::ip::tcp:
 		if (*cert) return;
 	}
 
+	generateSelfSigned(endpoint, wildcardOK, serverCert, cert, chain);
+	if (*cert) return;
+
 	std::cout << " No cert!" << std::endl;
 
 }
@@ -209,6 +212,57 @@ void SequentialCertificateManager::fetchNextGeneratedCert(boost::asio::ip::tcp::
 	*chain = &(this->chainList);
 	candidateCert[endpoint] = leaf;
 	authMap[endpoint] = (++iter);
+}
+
+
+void SequentialCertificateManager::generateSelfSigned(boost::asio::ip::tcp::endpoint &endpoint,
+												bool wildcardOK,
+												X509 *serverCert,
+												Certificate **cert,
+												std::list<Certificate*> **chain) {
+
+	X509 *self_signed = X509_new();
+	X509_set_version(self_signed, 3);
+	X509_set_issuer_name(self_signed, X509_get_subject_name(serverCert));
+	X509_set_subject_name(self_signed, X509_get_subject_name(serverCert));
+	X509_set_notBefore(self_signed, X509_get_notBefore(serverCert));
+	X509_set_notAfter(self_signed, X509_get_notAfter(serverCert));
+	X509_set_serialNumber(self_signed, X509_get_serialNumber(serverCert));
+	X509_set_pubkey(self_signed, this->leafKeys);
+	
+	if (add_ext(self_signed, NID_basic_constraints, "critical,CA:TRUE") == 0)
+		throw std::runtime_error(std::string("Unable to set certificate extendion: basic constraints"));
+	if (add_ext(self_signed, NID_key_usage, "critical,keyCertSign,cRLSign") == 0)
+		throw std::runtime_error(std::string("Unable to set certificate extendion: key usage"));
+	if (add_ext(self_signed, NID_subject_key_identifier, "hash") == 0)
+		throw std::runtime_error(std::string("Unable to set certificate extendion: key identifier"));
+	
+	if (!X509_sign(self_signed, this->leafKeys, EVP_md5()))
+		throw std::runtime_error(std::string("Unable to sign self signed cert"));
+
+	Certificate *self_signed_cert = new Certificate();
+	self_signed_cert->setCert(self_signed);
+	self_signed_cert->setKey(this->leafKeys);
+
+	*cert = self_signed_cert;
+	candidateCert[endpoint] = self_signed_cert;
+}
+
+
+int SequentialCertificateManager::add_ext(X509 *cert, int nid, const char *value) {
+	char *in_value;
+	strncpy(in_value, value, sizeof(value));
+	X509_EXTENSION *ex;
+	X509V3_CTX ctx;
+	X509V3_set_ctx_nodb(&ctx);
+	X509V3_set_ctx(&ctx, cert, cert, NULL, NULL, 0);
+	ex = X509V3_EXT_conf_nid(NULL, &ctx, nid, in_value);
+	if (!ex)
+		return 0;
+
+	X509_add_ext(cert,ex,-1);
+	X509_EXTENSION_free(ex);
+	return 1;
 }
 
 
