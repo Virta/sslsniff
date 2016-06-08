@@ -1,4 +1,14 @@
-sslsniff v0.8
+SSLsniff v0.81?
+---------------
+A fork of the original version on which I did some majorish additions and fixes that were needed in a project.
+The project was done at Helsinki University and was scoped to reveal some major deficiencies in SSL certificate
+handling within the Android, iOS and Windows 8 mobile operating systems.
+
+This version contains for instance rolling certificates, that are sequentially attached to a host-to-server stream
+and the creation of new certificates on-the-fly.
+
+
+
 Moxie Marlinspike <moxie@thoughtcrime.org>
 ------------------------------------
 
